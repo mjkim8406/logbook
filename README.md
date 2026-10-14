@@ -20,7 +20,7 @@ mcp/            MCP 서버 (Python, mcp SDK 2.x MCPServer)
 | `append_note(path, content)` | 기존 노트 끝에 추가 |
 | `vault_guide()` | vault README(규칙) 반환 |
 
-안전 규칙: vault 밖 경로, 숨김 경로(`.git` 등), `.md` 외 파일 거부. 쓰기는 `WRITE_DIRS`(기본 `inbox,retro`) 아래만 허용. 삭제·덮어쓰기 툴 없음.
+안전 규칙: vault 밖 경로, 숨김 경로(`.git` 등), `.md` 외 파일 거부. 새 노트 생성은 `WRITE_DIRS`(기본 `inbox,retro,meetings,troubleshooting,career,study`) 아래만, `APPEND_ONLY_DIRS`(기본 `journal`)는 append만 허용. vault 최상위 파일(`Home.md`, `README.md`)과 `templates/`, `notes/`는 AI가 수정 불가. 삭제·덮어쓰기 툴 없음.
 
 ## 로컬 실행
 ```bash
@@ -39,6 +39,6 @@ claude mcp add logbook -s user \
 ```
 
 ## TODO
-- [ ] Dockerfile / docker-compose (SilverBullet + MCP + Caddy)
+- [ ] Dockerfile / docker-compose (MCP + Caddy)
 - [ ] 인증 (OAuth / Bearer)
-- [ ] vault 자동 commit & push
+- [ ] 서버 vault git 동기화 (pull --rebase → commit → push, cron)

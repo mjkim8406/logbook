@@ -44,3 +44,18 @@ def test_append(vault):
     assert vault.read("retro/daily/2026-10-14.md").endswith("## 추가\n내용\n")
     with pytest.raises(VaultError):
         vault.append("notes/cdc.md", "x")
+
+
+def test_append_only_dir(tmp_path):
+    (tmp_path / "journal").mkdir()
+    (tmp_path / "journal/2026-10-14.md").write_text("## 메모\n", encoding="utf-8")
+    v = Vault(tmp_path, write_dirs=("inbox",), append_only_dirs=("journal",))
+    v.append("journal/2026-10-14.md", "- 기억할 것")
+    assert v.read("journal/2026-10-14.md").endswith("- 기억할 것\n")
+    with pytest.raises(VaultError):
+        v.write("journal/2026-10-15.md", "x")
+
+
+def test_root_level_not_writable(vault):
+    with pytest.raises(VaultError):
+        vault.write("index.md", "x")

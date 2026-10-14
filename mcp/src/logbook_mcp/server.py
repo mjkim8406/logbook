@@ -1,6 +1,7 @@
 """logbook MCP server. Env:
   VAULT_PATH        vault root (required)
-  WRITE_DIRS        comma-separated top-level dirs AI may write to (default: inbox,retro)
+  WRITE_DIRS        top-level dirs where AI may create/append notes (default: inbox,retro,meetings,troubleshooting,career,study)
+  APPEND_ONLY_DIRS  top-level dirs where AI may only append (default: journal)
   MCP_TRANSPORT     stdio | streamable-http (default: stdio)
   MCP_HOST/MCP_PORT for streamable-http (default: 127.0.0.1:8000)
 """
@@ -17,15 +18,20 @@ from .vault import Vault, VaultError
 
 
 def _build() -> MCPServer:
+    def _dirs(env: str, default: str) -> tuple[str, ...]:
+        return tuple(d.strip() for d in os.environ.get(env, default).split(",") if d.strip())
+
     vault = Vault(
         Path(os.environ["VAULT_PATH"]),
-        tuple(d.strip() for d in os.environ.get("WRITE_DIRS", "inbox,retro").split(",") if d.strip()),
+        _dirs("WRITE_DIRS", "inbox,retro,meetings,troubleshooting,career,study"),
+        _dirs("APPEND_ONLY_DIRS", "journal"),
     )
     readme = vault.root / "README.md"
     rules = readme.read_text(encoding="utf-8") if readme.is_file() else ""
     instructions = (
         "Personal work-log vault (markdown). Read the rules below before writing.\n"
-        f"Writable top-level dirs: {', '.join(vault.write_dirs)}. Notes are never overwritten; use append_note.\n\n"
+        f"Create/append dirs: {', '.join(vault.write_dirs)}. Append-only dirs: {', '.join(vault.append_only_dirs) or '-'}. "
+        "Notes are never overwritten; use append_note.\n\n"
         + rules
     )
 

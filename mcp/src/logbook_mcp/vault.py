@@ -13,6 +13,7 @@ class VaultError(Exception):
 class Vault:
     root: Path
     write_dirs: tuple[str, ...] = ("inbox", "retro")
+    append_only_dirs: tuple[str, ...] = ()
 
     def __post_init__(self):
         object.__setattr__(self, "root", self.root.expanduser().resolve())
@@ -35,10 +36,18 @@ class Vault:
     def _rel(self, p: Path) -> str:
         return p.relative_to(self.root).as_posix()
 
-    def _check_writable(self, p: Path) -> None:
-        top = p.relative_to(self.root).parts[0]
-        if top not in self.write_dirs:
-            raise VaultError(f"writes allowed only under: {', '.join(self.write_dirs)}")
+    def _top(self, p: Path) -> str:
+        parts = p.relative_to(self.root).parts
+        return parts[0] if len(parts) > 1 else ""
+
+    def _check_creatable(self, p: Path) -> None:
+        if self._top(p) not in self.write_dirs:
+            raise VaultError(f"new notes allowed only under: {', '.join(self.write_dirs)}")
+
+    def _check_appendable(self, p: Path) -> None:
+        if self._top(p) not in self.write_dirs + self.append_only_dirs:
+            allowed = self.write_dirs + self.append_only_dirs
+            raise VaultError(f"append allowed only under: {', '.join(allowed)}")
 
     def _iter_md(self, base: Path):
         for p in sorted(base.rglob("*.md")):
@@ -81,7 +90,7 @@ class Vault:
     def write(self, path: str, content: str) -> str:
         """Create a new note. Never overwrites."""
         p = self._resolve(path)
-        self._check_writable(p)
+        self._check_creatable(p)
         if p.exists():
             raise VaultError(f"already exists (use append_note): {path}")
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -90,7 +99,7 @@ class Vault:
 
     def append(self, path: str, content: str) -> str:
         p = self._resolve(path)
-        self._check_writable(p)
+        self._check_appendable(p)
         if not p.is_file():
             raise VaultError(f"not found: {path}")
         existing = p.read_text(encoding="utf-8")
