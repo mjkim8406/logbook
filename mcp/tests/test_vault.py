@@ -56,6 +56,21 @@ def test_append_only_dir(tmp_path):
         v.write("journal/2026-10-15.md", "x")
 
 
+def test_edit(tmp_path):
+    (tmp_path / "career").mkdir()
+    (tmp_path / "journal").mkdir()
+    (tmp_path / "career/a.md").write_text("a 틀림 b 틀림\n", encoding="utf-8")
+    (tmp_path / "journal/2026-10.md").write_text("plan\n", encoding="utf-8")
+    v = Vault(tmp_path, write_dirs=("career",), append_only_dirs=("journal",))
+    for old in ("틀림", "없음", ""):  # 중복·없음·빈 문자열은 거부
+        with pytest.raises(VaultError):
+            v.edit("career/a.md", old, "z")
+    v.edit("career/a.md", "a 틀림", "a 맞음")
+    assert v.read("career/a.md") == "a 맞음 b 틀림\n"
+    with pytest.raises(VaultError):
+        v.edit("journal/2026-10.md", "plan", "z")
+
+
 def test_root_level_not_writable(vault):
     with pytest.raises(VaultError):
         vault.write("index.md", "x")

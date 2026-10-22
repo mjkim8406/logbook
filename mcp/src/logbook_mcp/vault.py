@@ -106,3 +106,16 @@ class Vault:
         sep = "" if existing.endswith("\n") else "\n"
         p.write_text(existing + sep + "\n" + content.rstrip("\n") + "\n", encoding="utf-8")
         return self._rel(p)
+
+    def edit(self, path: str, old: str, new: str) -> str:
+        """Replace one exact, unique occurrence of `old`. Append-only dirs are excluded."""
+        p = self._resolve(path)
+        self._check_creatable(p)
+        if not p.is_file():
+            raise VaultError(f"not found: {path}")
+        existing = p.read_text(encoding="utf-8")
+        count = existing.count(old) if old else 0
+        if count != 1:
+            raise VaultError(f"old text must match exactly once (found {count}): {path}")
+        p.write_text(existing.replace(old, new, 1), encoding="utf-8")
+        return self._rel(p)

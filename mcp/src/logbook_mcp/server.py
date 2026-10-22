@@ -1,6 +1,6 @@
 """logbook MCP server. Env:
   VAULT_PATH        vault root (required)
-  WRITE_DIRS        top-level dirs where AI may create/append notes (default: inbox,retro,meetings,troubleshooting,career,study)
+  WRITE_DIRS        top-level dirs where AI may create/append notes (default: inbox,retro,meetings,troubleshooting,career,study,docs)
   APPEND_ONLY_DIRS  top-level dirs where AI may only append (default: journal)
   MCP_TRANSPORT     stdio | streamable-http (default: stdio)
   MCP_HOST/MCP_PORT for streamable-http (default: 127.0.0.1:8000)
@@ -23,7 +23,7 @@ def _build() -> MCPServer:
 
     vault = Vault(
         Path(os.environ["VAULT_PATH"]),
-        _dirs("WRITE_DIRS", "inbox,retro,meetings,troubleshooting,career,study"),
+        _dirs("WRITE_DIRS", "inbox,retro,meetings,troubleshooting,career,study,docs"),
         _dirs("APPEND_ONLY_DIRS", "journal"),
     )
     readme = vault.root / "README.md"
@@ -31,7 +31,7 @@ def _build() -> MCPServer:
     instructions = (
         "Personal work-log vault (markdown). Read the rules below before writing.\n"
         f"Create/append dirs: {', '.join(vault.write_dirs)}. Append-only dirs: {', '.join(vault.append_only_dirs) or '-'}. "
-        "Notes are never overwritten; use append_note.\n\n"
+        "Fix parts of a note with edit_note (create/append dirs only); never overwrite a whole note.\n\n"
         + rules
     )
 
@@ -69,6 +69,11 @@ def _build() -> MCPServer:
     def append_note(path: str, content: str) -> str:
         """Append content to the end of an existing note under the writable dirs."""
         return _guard(vault.append, path, content)
+
+    @mcp.tool(annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=True))
+    def edit_note(path: str, old_text: str, new_text: str) -> str:
+        """Replace old_text (must match exactly once) with new_text in a note under the create/append dirs. Not for append-only dirs."""
+        return _guard(vault.edit, path, old_text, new_text)
 
     @mcp.tool(annotations=ro)
     def vault_guide() -> str:
