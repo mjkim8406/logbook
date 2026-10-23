@@ -1,6 +1,6 @@
 """logbook MCP server. Env:
   VAULT_PATH        vault root (required)
-  WRITE_DIRS        top-level dirs where AI may create/append notes (default: inbox,retro,meetings,troubleshooting,career,study,docs)
+  WRITE_DIRS        top-level dirs where AI may create/append notes (default: inbox,retro,docs,career,study)
   APPEND_ONLY_DIRS  top-level dirs where AI may only append (default: journal)
   MCP_TRANSPORT     stdio | streamable-http (default: stdio)
   MCP_HOST/MCP_PORT for streamable-http (default: 127.0.0.1:8000)
@@ -23,7 +23,7 @@ def _build() -> MCPServer:
 
     vault = Vault(
         Path(os.environ["VAULT_PATH"]),
-        _dirs("WRITE_DIRS", "inbox,retro,meetings,troubleshooting,career,study,docs"),
+        _dirs("WRITE_DIRS", "inbox,retro,docs,career,study"),
         _dirs("APPEND_ONLY_DIRS", "journal"),
     )
     readme = vault.root / "README.md"
